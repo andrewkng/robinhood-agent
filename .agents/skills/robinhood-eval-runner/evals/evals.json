@@ -1,0 +1,79 @@
+{
+  "skill_name": "robinhood-copilot",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "give me a quick health check on my robinhood portfolio. whats the single biggest risk and the one thing i should change first",
+      "expected_output": "Multi-account snapshot with masked accounts, combined concentration (NVDA ~36%), options book incl. collateral and early-assignment risk, one prioritized action",
+      "files": [],
+      "assertions": [
+        "Covers all three accounts (Individual, Roth, MCP) in the snapshot",
+        "Masks account numbers (no full 9-digit account number appears)",
+        "Reports combined NVDA weight across accounts (roughly 35-38%)",
+        "Notes that short-put collateral ties up cash (buying power far below cash)",
+        "Flags early-assignment risk or near-zero extrinsic on the deep-ITM PLTR $50 call",
+        "Names one single biggest risk and one prioritized first action",
+        "Opens with a bottom line answering the question within the first ~6 lines",
+        "Answer is 800 words or fewer",
+        "No order/review/write tool was called"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "i want to collect some premium over the next few weeks without getting wrecked by earnings. which of my positions should i write covered calls on, what strike and expiry? dont place anything",
+      "expected_output": "Earnings-aware covered call pick(s) with expiry before earnings, delta ~0.15-0.25, <=50% coverage, Roth-first location, management rules, no orders placed",
+      "files": [],
+      "assertions": [
+        "Recommended expiry falls before that underlying's next earnings date",
+        "Recommended strike delta is within roughly 0.15-0.30",
+        "EVERY suggested call (including optional/add-on ones) keeps per-lot coverage at or below 50%",
+        "Explicitly treats lots under 200 free shares as ineligible for covered calls",
+        "Recommends the Roth IRA as the account for the calls (tax-free)",
+        "Excludes or defers names reporting within the window (e.g. MSFT, AMZN, HOOD)",
+        "Gives a take-profit price/rule",
+        "Did not pull the full get_earnings_calendar (used targeted earnings lookups)",
+        "Fetched at most 4 candidate strikes per underlying via get_option_instruments",
+        "Answer is 800 words or fewer",
+        "No order/review/write tool was called"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "look at what i traded in the last 2 weeks and tell me honestly what im doing wrong",
+      "expected_output": "Pulls filled equity/option/crypto orders + realized PnL for ~14 days, classifies patterns (covered call churn, put rolls, RDDT range trades, SOFI averaging down), concrete critiques (market orders, fees, put asymmetry)",
+      "files": [],
+      "assertions": [
+        "Pulls filled orders from roughly the last 14 days (since ~Oct 4)",
+        "Uses realized P&L data (get_pnl_trade_history or get_realized_pnl)",
+        "Identifies the RDDT range/swing trading pattern",
+        "Identifies short-put opens/rolls on AMZN or AVGO",
+        "Flags use of market orders on stocks",
+        "Flags the ~0.95% crypto fee on SOL buys",
+        "Bottom line nets realized P&L against open P&L on puts opened in the window",
+        "Critiques are explicitly prioritized/ranked by impact",
+        "Answer is 900 words or fewer",
+        "No order/review/write tool was called"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "if you had to make one swing trade tomorrow using stuff i already own, what would it be? entry stop target. dont place it",
+      "expected_output": "Earnings-filtered screen of holdings, one setup with entry/stop/targets/R:R/time stop, concentration-capped sizing, a 'passed on' table",
+      "files": [],
+      "assertions": [
+        "Checks earnings dates for the held stocks",
+        "Excludes holdings that report within ~3 weeks",
+        "Uses daily price history and RSI and/or ATR for the pick",
+        "Gives a specific entry, stop and at least one target",
+        "Stop is tied to support and/or ATR (not an arbitrary %)",
+        "States reward-to-risk for the trade",
+        "Includes a time stop / exit before the pick's next earnings",
+        "Sizing accounts for existing exposure to that name (e.g. NVDA ~36%)",
+        "Includes a table of passed-on holdings with reasons",
+        "Did not pull the full get_earnings_calendar",
+        "Answer is 800 words or fewer",
+        "No order/review/write tool was called"
+      ]
+    }
+  ]
+}
