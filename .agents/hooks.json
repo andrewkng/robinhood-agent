@@ -1,0 +1,16 @@
+{
+  "readonly-report-guard": {
+    "PreToolUse": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ../scripts/agy-readonly-guard.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

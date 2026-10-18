@@ -1,0 +1,49 @@
+{
+  "mcpServers": {
+    "atlassian-mcp-server": {
+      "args": [
+        "https://mcp.atlassian.com/v1/sse"
+      ],
+      "command": "mcp-remote",
+      "disabled": true
+    },
+    "cloudrun": {
+      "args": [
+        "-y",
+        "@google-cloud/cloud-run-mcp"
+      ],
+      "command": "npx",
+      "disabled": true
+    },
+    "context7": {
+      "headers": {
+        "Accept": "application/json, text/event-stream",
+        "CONTEXT7_API_KEY": "REDACTED"
+      },
+      "serverUrl": "https://mcp.context7.com/mcp"
+    },
+    "geap": {
+      "args": [
+        "-c",
+        "exec '/Users/yannipeng/git-projects/geap-mcp'/bin/serve.sh"
+      ],
+      "command": "/bin/sh",
+      "disabled": true
+    },
+    "google-cloud-resource-manager": {
+      "authProviderType": "google_credentials",
+      "serverUrl": "https://cloudresourcemanager.googleapis.com/mcp",
+      "disabled": true
+    },
+    "google-developer-knowledge": {
+      "headers": {
+        "X-Goog-Api-Key": "REDACTED",
+        "disabled": true
+      },
+      "serverUrl": "https://developerknowledge.googleapis.com/mcp"
+    },
+    "robinhood": {
+      "url": "https://agent.robinhood.com/mcp/trading"
+    }
+  }
+}

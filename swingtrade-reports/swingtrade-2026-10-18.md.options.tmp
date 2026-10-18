@@ -1,0 +1,29 @@
+# Options income — 2026-10-18
+
+**Bottom line**
+Sell to open **3 × NVDA Nov 13, 2026 $230 calls** in your **Roth IRA (••0216)** at a **$2.73 limit** ($819 total premium) and **2 × NVDA Nov 13, 2026 $230 calls** in your **Individual account (••8827)** at **$2.73** ($546 total premium), for **$1,365 combined**. The 26-day Nov 13 expiration sits inside the 25–45 DTE sweet spot and closes four days before NVIDIA's confirmed Nov 17 earnings report. Neither the Roth IRA nor the Individual account is accessible to this agent (`••3771` is the only agent-tradable account and holds no shares or options level), so you will need to place these orders directly in the Robinhood app.
+
+*Market data is stale as of the Friday, 2026-10-16 regular close (19:59:59 UTC; extended-hours equity prints as of 23:59 UTC).*
+
+### The trade
+
+| Field | Roth IRA (••0216) — First priority | Individual (••8827) — Secondary |
+|---|---|---|
+| **Action & Contract** | Sell to open **3 × NVDA 2026-11-13 $230 Call** | Sell to open **2 × NVDA 2026-11-13 $230 Call** |
+| **Underlying price** | $214.14 regular close ($213.75 after-hours, 2026-10-16) | $214.14 regular close ($213.75 after-hours, 2026-10-16) |
+| **Limit price** | **$2.73** mid (bid $2.67 / ask $2.79; floor near **$2.68**) | **$2.73** mid (bid $2.67 / ask $2.79; floor near **$2.68**) |
+| **Delta / IV** | **0.241** / 35.25% | **0.241** / 35.25% |
+| **Chance of profit** | **82.17%** | **82.17%** |
+| **Total premium** | **$819.00** ($273.00 per contract) | **$546.00** ($273.00 per contract) |
+| **Strike % above spot** | **+7.41%** above $214.14 close (breakeven $232.73, +8.68%) | **+7.41%** above $214.14 close (breakeven $232.73, +8.68%) |
+| **Return (26 DTE / annualized)** | **1.27%** over 26 days / **17.89%** annualized | **1.27%** over 26 days / **17.89%** annualized |
+| **Coverage** | **300 of 601.43 free shares (49.88%)** | **200 of 452.03 free shares (44.24%)** |
+
+### Why
+- **Roth IRA first (tax-free compounding):** Your Roth IRA (••0216) holds 601.434752 uncapped NVDA shares ($30.99 cost basis) and has `option_level_2`. Selling 3 contracts there generates $819 totally tax-free, and any upside assignment wouldn't trigger a capital gains tax bill.
+- **Zero earnings gap risk:** NVDA reports Q3 FY27 earnings on **2026-11-17 (after close, verified)**. The **2026-11-13** expiration (26 DTE) is the only chain in the 25–45 day window that expires cleanly before the report, harvesting peak theta decay (-$0.126/day per contract) without binary earnings exposure.
+- **Strict ≤50% lot coverage:** Capping 300/601.43 shares in the Roth (49.88%) and 200/452.03 shares in the Individual account (44.24%) leaves over half your shares in each account completely uncapped if NVDA rallies ahead of earnings.
+
+### Events to note
+- **FOMC Rate Decision — Oct 28, 2026** ([Edward Jones](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEk1BJ1EcdFxbzjZWG3O3v4La2VlNtR1b9m_F1ozCJ7JSzSd_oWuIThBSTIONDoIt_mJdEnH654JlkqZzhYnOHrqjo75XiIQ6SGwhtA9vu3psjShr1dXaoFgicZ7hi_AW_jNWNQiiTUQDPfnT6uIbFFKnEmasXgheNOFRKUmGvZHMsoo_S2s2n_iIlPc5z-T4GL7I1MLBT7RJigpEekdQ==), [Admiral Markets](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEGElAZ_uv4RD5HaLDGAM5Nk3BPtEMpxhXKiNnYzdfUok6oYd-7HCJkpMKVLZDL8m6XzOw8YytP5LbEZBdLsSVeUJFkhizETOgOAtT6EG3m0u_JVh97dc48AnWo-XwtdFQiG_6mv1LYqmSOevos6HXvEcM_091Y4jQhVynPcYOf8IJ7WLiiJVWPPdD0MKLpNpToFiMxTdA=), Oct 2026): Macro rate decision and late-October mega-cap tech earnings (hyperscaler AI capex updates) fall mid-cycle, alongside routine mid-month **CPI inflation data** ([Tickeron](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGCJQAy1EcYWZhrwL_SWfeymyRrjLdBLXdG1Cm0E684Pqr-xuN_X-bcWjYhJRWaY4WH9YPINIGnRKTIRutlHce-lxiwucLpInTjZF6zVVvrYWalFncRbzYhOekdCyhec9s89xuHxqsqVpTYiI6zkWS3oIR7CUP-gcA8z1Q6baUsG3wUlhcq), Oct 2026). **Action:** Kept the +7.41% OTM buffer ($230 strike, 0.241 delta); if you want extra cushion against a dovish Fed/hyperscaler rally, step up to the $235 fallback strike.
+- **NVDA Q3 FY27 Earnings — Nov 17, 2026 PM** (Robinhood verified calendar; [Investing.com](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGQ80Nt0nhso2nSjZmZY2j6ywNq2CSNvhdo9TS2R8VvpEdxWMrfEtJDLO6Znhk8MJoL0z9hMrKWobv-4DYJ1fT5V0vSMfy4rplt5IhpXLCDZeK4L2YeYxZpXhzP1

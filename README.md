@@ -26,10 +26,16 @@ robinhood-agent/
 ├── README.md                                  ← this file
 ├── CLAUDE.md                                  ← Claude Code instructions for the MCP tools
 ├── plans/                                     ← implementation plans (e.g. swingtrade-launchd-schedule.md)
-├── scripts/                                   ← Mon/Wed swing-trade + options-income launchd job
+├── scripts/                                   ← Mon/Wed swing-trade + options-income launchd jobs (agy & Claude)
+│   ├── swingtrade-report-agy.sh               ← Antigravity (agy) headless runner
+│   ├── swingtrade-report-claude.sh            ← Claude Code headless runner
+│   ├── agy-readonly-guard.py                  ← PreToolUse read-only safety gate for agy headless runs
+│   ├── com.robinhood-agent.swingtrade-agy.plist
+│   └── com.robinhood-agent.swingtrade-claude.plist
 ├── swingtrade-reports/                        ← swingtrade-YYYY-MM-DD.md output (gitignored)
 ├── .agents/                                   ← Antigravity (agy) workspace customizations
 │   ├── AGENTS.md                              ← agent-neutral rules + trade analysis checklist
+│   ├── hooks.json                             ← PreToolUse hook enforcing read-only mode in headless agy runs
 │   └── skills/
 │       ├── robinhood-copilot/                 ← the trading copilot skill (agy)
 │       │   ├── SKILL.md                       ← core rules, data snapshot, portfolio review
@@ -316,33 +322,36 @@ In `-p` mode, any tool that isn't allowed is refused instead of waiting for appr
 
 ### Swing-trade report, Mon & Wed (launchd)
 
-`scripts/swingtrade-report.sh` runs two headless, read-only analyses back to back, the **swing screen** and then **options income** ("what calls should I sell", premium without earnings risk), every **Monday and Wednesday at 6:40 AM local time (PT)**, which is 10 minutes after the 9:30 ET open. Both reports go into one file, `swingtrade-reports/swingtrade-YYYY-MM-DD.md`, separated by `---` and dated by the New York trading date. Reports and logs are gitignored.
+`scripts/swingtrade-report-agy.sh` (for **Antigravity / `agy`**) and `scripts/swingtrade-report-claude.sh` (for **Claude Code**) each run two headless, read-only analyses in parallel — the **swing screen** and **options income** ("what calls should I sell", premium without earnings risk) — every **Monday and Wednesday at 6:40 AM local time (PT)**, which is 10 minutes after the 9:30 ET open. Both reports go into one file, `swingtrade-reports/swingtrade-YYYY-MM-DD.md`, separated by `---` and dated by the New York trading date. Reports and logs are gitignored.
 
 | File | Purpose |
 |---|---|
-| `scripts/swingtrade-report.sh` | Entrypoint. Skips the run if today's report exists, on ET weekends, or before 09:35 ET (`FORCE=1` bypasses the weekend and time checks). Runs with `--permission-mode dontAsk` (anything not on the allow list is refused) and `--tools Read,Bash,Skill,WebSearch`. WebSearch is used only for the recommended tickers: in the swing run for recent news and catalysts, and in the options run for big events before expiration (ex-dividend, FDA dates, M&A and similar), with cited sources; `WebFetch` stays denied. It denies every Robinhood tool that trades or changes the account (`place_*`, `review_*`, `cancel_*`, `exercise_option`, plus alert, watchlist and scan writes). |
-| `scripts/com.robinhood-agent.swingtrade.plist` | launchd agent (`StartCalendarInterval`, Mon & Wed 06:40) |
+| `scripts/swingtrade-report-agy.sh` | Antigravity (`agy -p`) entrypoint. Skips the run if today's report exists, on ET weekends, or before 09:35 ET (`FORCE=1` bypasses the weekend and time checks). Sets `AGY_READONLY_REPORT=1` so `.agents/hooks.json` (`scripts/agy-readonly-guard.py`) hard-denies all mutating Robinhood tools (`place_*`, `review_*`, `preview_*`, `cancel_*`, `exercise_option`, plus alert/watchlist/scan/chart writes), file writes, URL fetches, and subagents, while allowing only the read-only Robinhood tools, `view_file`, `search_web` (only for the recommended ticker), and `python3`/`jq`. |
+| `scripts/swingtrade-report-claude.sh` | Claude Code (`claude -p`) entrypoint. Same schedule/date guards and prompts, using `--permission-mode dontAsk`, `--tools Read,Bash,Skill,WebSearch`, `--allowedTools`, and `--disallowedTools`. |
+| `scripts/com.robinhood-agent.swingtrade-agy.plist` | launchd agent for `agy` (`StartCalendarInterval`, Mon & Wed 06:40) |
+| `scripts/com.robinhood-agent.swingtrade-claude.plist` | launchd agent for Claude Code (`StartCalendarInterval`, Mon & Wed 06:40) |
 | `swingtrade-reports/logs/launchd.log` | Run log. A failed run leaves `swingtrade-<date>.error.md`. |
 
-**Install / uninstall:**
+**Install / uninstall (pick `agy` or `claude`):**
 
 ```bash
-ln -sf "$PWD/scripts/com.robinhood-agent.swingtrade.plist" ~/Library/LaunchAgents/
-launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.robinhood-agent.swingtrade.plist
+# Example using Antigravity (agy) — or substitute swingtrade-claude
+ln -sf "$PWD/scripts/com.robinhood-agent.swingtrade-agy.plist" ~/Library/LaunchAgents/
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.robinhood-agent.swingtrade-agy.plist
 
 # run now (test)
-launchctl kickstart -k gui/$(id -u)/com.robinhood-agent.swingtrade
+launchctl kickstart -k gui/$(id -u)/com.robinhood-agent.swingtrade-agy
 
 # remove
-launchctl bootout gui/$(id -u)/com.robinhood-agent.swingtrade
-rm ~/Library/LaunchAgents/com.robinhood-agent.swingtrade.plist
+launchctl bootout gui/$(id -u)/com.robinhood-agent.swingtrade-agy
+rm ~/Library/LaunchAgents/com.robinhood-agent.swingtrade-agy.plist
 ```
 
 **Caveats:**
 - launchd runs a missed job when the Mac wakes; cron does not. A Mac that is powered off misses the run. To get the report on time, schedule a wake: `sudo pmset repeat wakeorpoweron MW 06:35:00`.
 - A late run uses the quotes live at that moment. The report timestamps them.
 - The prompt handles market holidays by writing a one-line "market closed" report.
-- `claude -p` uses your existing Claude Code login. If a run fails with an auth error, start `claude` once interactively to refresh it.
+- `agy -p` / `claude -p` use your existing CLI login. If a run fails with an auth error, start `agy` or `claude` once interactively to refresh it.
 
 ---
 

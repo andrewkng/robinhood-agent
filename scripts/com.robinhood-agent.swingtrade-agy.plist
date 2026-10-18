@@ -3,11 +3,11 @@
 <plist version="1.0">
 <dict>
   <key>Label</key>
-  <string>com.robinhood-agent.swingtrade</string>
+  <string>com.robinhood-agent.swingtrade-agy</string>
   <key>ProgramArguments</key>
   <array>
     <string>/bin/bash</string>
-    <string>/Users/yannipeng/git-projects/robinhood-agent/scripts/swingtrade-report.sh</string>
+    <string>/Users/yannipeng/git-projects/robinhood-agent/scripts/swingtrade-report-agy.sh</string>
   </array>
   <key>WorkingDirectory</key>
   <string>/Users/yannipeng/git-projects/robinhood-agent</string>
