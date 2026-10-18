@@ -9,3 +9,7 @@
 # Local settings / OS files
 .claude/settings.local.json
 .DS_Store
+
+# Daily swing-trade reports: real holdings
+swingtrade-reports/*.md
+swingtrade-reports/logs/

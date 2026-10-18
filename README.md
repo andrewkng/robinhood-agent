@@ -25,6 +25,9 @@ An AI trading copilot for Robinhood accounts. It is built on the **`robinhood-tr
 robinhood-agent/
 ├── README.md                                  ← this file
 ├── CLAUDE.md                                  ← Claude Code instructions for the MCP tools
+├── plans/                                     ← implementation plans (e.g. swingtrade-launchd-schedule.md)
+├── scripts/                                   ← Mon/Wed swing-trade launchd job
+├── swingtrade-reports/                        ← swingtrade-YYYY-MM-DD.md output (gitignored)
 ├── .agents/                                   ← Antigravity (agy) workspace customizations
 │   ├── AGENTS.md                              ← agent-neutral rules + trade analysis checklist
 │   └── skills/
@@ -310,6 +313,36 @@ claude -p "/robinhood-copilot give me a quick health check on my portfolio" \
 ```
 
 In `-p` mode, any tool that isn't allowed is refused instead of waiting for approval. Never combine `--dangerously-skip-permissions` with this MCP server unless the `deny` list above is in place.
+
+### Swing-trade report, Mon & Wed (launchd)
+
+`scripts/swingtrade-report.sh` runs the swing screen headless and read-only every **Monday and Wednesday at 6:40 AM local time (PT)**, which is 10 minutes after the 9:30 ET open. Each run writes `swingtrade-reports/swingtrade-YYYY-MM-DD.md`, dated by the New York trading date. Reports and logs are gitignored.
+
+| File | Purpose |
+|---|---|
+| `scripts/swingtrade-report.sh` | Entrypoint. Skips the run if today's report exists, on ET weekends, or before 09:35 ET (`FORCE=1` bypasses the weekend and time checks). Allows only read-only tools and denies `place_*`, `review_*`, `cancel_*` and `exercise_option`. |
+| `scripts/com.robinhood-agent.swingtrade.plist` | launchd agent (`StartCalendarInterval`, Mon & Wed 06:40) |
+| `swingtrade-reports/logs/launchd.log` | Run log. A failed run leaves `swingtrade-<date>.error.md`. |
+
+**Install / uninstall:**
+
+```bash
+ln -sf "$PWD/scripts/com.robinhood-agent.swingtrade.plist" ~/Library/LaunchAgents/
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.robinhood-agent.swingtrade.plist
+
+# run now (test)
+launchctl kickstart -k gui/$(id -u)/com.robinhood-agent.swingtrade
+
+# remove
+launchctl bootout gui/$(id -u)/com.robinhood-agent.swingtrade
+rm ~/Library/LaunchAgents/com.robinhood-agent.swingtrade.plist
+```
+
+**Caveats:**
+- launchd runs a missed job when the Mac wakes; cron does not. A Mac that is powered off misses the run. To get the report on time, schedule a wake: `sudo pmset repeat wakeorpoweron MW 06:35:00`.
+- A late run uses the quotes live at that moment. The report timestamps them.
+- The prompt handles market holidays by writing a one-line "market closed" report.
+- `claude -p` uses your existing Claude Code login. If a run fails with an auth error, start `claude` once interactively to refresh it.
 
 ---
 
