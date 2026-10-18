@@ -14,6 +14,7 @@
 | Puts: stop | Close if the mark reaches 2–3× the credit received. Roll down and out only for a credit. | |
 | Puts: names | Only on stocks the user is happy to own at that strike, with a maximum position size | |
 | Earnings | Close or roll calls you don't want assigned **before** the report. Sell new premium **after** it, once the move has happened. | |
+| Other events | Web-search each recommended ticker for big events before expiration (see step 5) | FDA dates, investor days, M&A, lawsuits or an ex-dividend date can gap the stock or trigger early assignment, just like earnings. The Robinhood tools don't report them. |
 
 ## The 50% coverage limit is firm, so don't offer exceptions
 
@@ -35,7 +36,16 @@ How to apply it:
    Round to the chain's strike spacing. Then request the estimate, one strike below and one strike above, in a single parallel turn: `get_option_instruments(chain_symbol, expiration_dates, type="call", strike_price=X)`.
    Follow with one `get_option_quotes` call for all of them. Don't request unfiltered chains. They return 100+ rows.
 4. Pick the strike closest to delta 0.20–0.25. The one above is the fallback.
-5. Size the trade using the coverage formula, in the best tax location.
+5. **Check for big events with WebSearch**, only for the ticker(s) you're about to recommend (never every holding). Search once per ticker, e.g. `"<SYMBOL> stock news upcoming events <month year>"`, and look for anything between today and the expiration:
+   - Scheduled: confirmed earnings date (cross-check the Robinhood date), ex-dividend date, FDA/PDUFA or trial readouts, investor or product days, shareholder votes, lock-up expiries, splits, index adds or deletes.
+   - Unscheduled (last ~7 days): M&A talk, guidance changes, lawsuits or regulatory actions, analyst moves, management changes.
+   - Market-wide: an FOMC or CPI date before expiration, noted once, not per ticker.
+
+   Prefer primary or credible sources (company IR or press releases, SEC filings, Reuters, Bloomberg, WSJ, CNBC) and note each source's date. Then act on it:
+   - An event that could gap the stock before expiration → pick an expiration before it, move to the higher fallback strike, or skip the name and say why.
+   - **Ex-dividend before expiration** on a covered call → early assignment risk is high if the dividend exceeds the call's extrinsic value the day before. Flag it.
+   - Nothing material → say "no major events found" in one line. News is context: it can flag a risk, but don't let headlines override the delta, earnings and coverage rules.
+6. Size the trade using the coverage formula, in the best tax location.
 
 ## Output template (aim for ≤ ~750 words)
 
@@ -43,6 +53,7 @@ Start with a **Bottom line** of 2–4 lines: the trade, the premium, and why now
 
 - **The trade:** account, sell to open N × SYMBOL $strike call, expiration, limit price (start at mid, set a floor near the bid), delta, chance of profit, premium in $, strike as % above the price, return over the period and annualized, and coverage (N×100 of the free shares = X%).
 - **Why:** 2–3 bullets (earnings timing, tax location, coverage).
+- **Events to note:** each event found before expiration with its date, its source and what you did about it, or "no major events found".
 - **Management:** take-profit price, roll trigger, and an entry-timing note (sell calls on up days).
 - **What to leave alone:** one compact table covering every other holding, with columns for lot, earnings date, and reason or next step. Reasons include reporting soon, under 200 free shares, or already capped.
 - **Fallback:** the next strike up, in one line.

@@ -48,8 +48,8 @@ Then compute everything with a quick Python one-off instead of doing mental math
 |---|---|---|
 | "analyze my portfolio", "optimization tips", "how concentrated am I" | Portfolio review | below |
 | "what's my strategy", "look at my last N days of trades" | Strategy review | `references/strategy-review.md` |
-| "how do I optimize my trading on top of long-term holdings", "covered call ideas", "what would you sell Monday" | Options income | `references/options-income.md` |
-| "swing trade", "what would you buy today", "why X not Y" | Swing screen | `references/swing-screen.md` |
+| "how do I optimize my trading on top of long-term holdings", "covered call ideas", "what would you sell Monday" | Options income | `references/options-income.md` (includes `WebSearch` on recommended tickers) |
+| "swing trade", "what would you buy today", "why X not Y" | Swing screen | `references/swing-screen.md` (includes `WebSearch` on recommended ticker) |
 
 Several modes can apply in one conversation. Reuse snapshot data you already have instead of fetching it again, unless prices may have moved (e.g. a new trading day).
 
