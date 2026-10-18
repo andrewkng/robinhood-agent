@@ -320,7 +320,7 @@ In `-p` mode, any tool that isn't allowed is refused instead of waiting for appr
 
 | File | Purpose |
 |---|---|
-| `scripts/swingtrade-report.sh` | Entrypoint. Skips the run if today's report exists, on ET weekends, or before 09:35 ET (`FORCE=1` bypasses the weekend and time checks). Allows only read-only tools and denies `place_*`, `review_*`, `cancel_*` and `exercise_option`. |
+| `scripts/swingtrade-report.sh` | Entrypoint. Skips the run if today's report exists, on ET weekends, or before 09:35 ET (`FORCE=1` bypasses the weekend and time checks). Runs with `--permission-mode dontAsk` (anything not on the allow list is refused) and `--tools Read,Bash,Skill,WebSearch`. WebSearch is used only for the one recommended ticker (recent news and catalysts, with cited sources); `WebFetch` stays denied. It denies every Robinhood tool that trades or changes the account (`place_*`, `review_*`, `cancel_*`, `exercise_option`, plus alert, watchlist and scan writes). |
 | `scripts/com.robinhood-agent.swingtrade.plist` | launchd agent (`StartCalendarInterval`, Mon & Wed 06:40) |
 | `swingtrade-reports/logs/launchd.log` | Run log. A failed run leaves `swingtrade-<date>.error.md`. |
 
