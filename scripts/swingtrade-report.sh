@@ -1,6 +1,6 @@
 #!/bin/bash
-# Read-only swing-trade analysis, run by launchd Mon and Wed shortly after market open.
-# Writes swingtrade-reports/swingtrade-YYYY-MM-DD.md (date in America/New_York).
+# Read-only swing-trade + options-income analysis, run by launchd Mon and Wed shortly after market open.
+# Both reports go into swingtrade-reports/swingtrade-YYYY-MM-DD.md (date in America/New_York).
 # Set FORCE=1 to bypass the weekday/time guards for manual testing.
 set -euo pipefail
 
@@ -34,7 +34,7 @@ if [[ "${FORCE:-0}" != "1" ]]; then
 fi
 
 MCP=mcp__robinhood-trading__
-ALLOWED="${MCP}get_accounts,${MCP}get_portfolio,${MCP}get_equity_positions,${MCP}get_option_positions,${MCP}get_crypto_positions,${MCP}get_equity_quotes,${MCP}get_crypto_quotes,${MCP}get_option_instruments,${MCP}get_option_quotes,${MCP}get_equity_fundamentals,${MCP}get_equity_analyst_ratings,${MCP}get_earnings_results,${MCP}get_equity_historicals,${MCP}get_equity_technical_indicators,Bash(python3:*),Bash(jq:*),Read,Skill,WebSearch"
+ALLOWED="${MCP}get_accounts,${MCP}get_portfolio,${MCP}get_equity_positions,${MCP}get_option_positions,${MCP}get_crypto_positions,${MCP}get_equity_quotes,${MCP}get_crypto_quotes,${MCP}get_option_chains,${MCP}get_option_instruments,${MCP}get_option_quotes,${MCP}get_equity_fundamentals,${MCP}get_equity_analyst_ratings,${MCP}get_earnings_results,${MCP}get_equity_historicals,${MCP}get_equity_technical_indicators,Bash(python3:*),Bash(jq:*),Read,Skill,WebSearch"
 # Deny every tool that can trade or change the account. Deny rules win over any
 # allow rule or permission mode, including the user's global "auto" defaultMode.
 DENIED=$(printf "${MCP}%s," \
@@ -49,21 +49,34 @@ DENIED=$(printf "${MCP}%s," \
   add_legend_indicator update_legend_indicator remove_legend_indicator set_legend_chart_settings)
 DENIED="${DENIED%,},Write,Edit,NotebookEdit,WebFetch,Agent"
 
-PROMPT="/robinhood-copilot Run the swing screen on my holdings for today ($DATE). Analysis only: do not trade, review, or preview any orders. If the US stock market is closed today (holiday), say so in one line and stop. Output ONLY the final markdown report, starting with a '# Swing trade — $DATE' heading: Bottom line, trade plan table, What I passed on, What would cancel the idea, and how it fits with open positions. Timestamp the quotes. Only AFTER you have picked the trade, use WebSearch for that one recommended ticker only (never search other holdings; skip searching if the result is 'no trade'): news from the last 7 days and scheduled catalysts before the time stop (e.g. FDA dates, investor days, Fed/CPI). Prefer primary or credible sources (company IR/press releases, SEC, Reuters, Bloomberg, WSJ, CNBC). Add a 'News & catalysts' section citing each source with its date. News is context only: it can flag a risk but must not override the technical filters."
+SWING_PROMPT="/robinhood-copilot Run the swing screen on my holdings for today ($DATE). Analysis only: do not trade, review, or preview any orders. If the US stock market is closed today (holiday), say so in one line and stop. Output ONLY the final markdown report, starting with a '# Swing trade — $DATE' heading: Bottom line, trade plan table, What I passed on, What would cancel the idea, and how it fits with open positions. Timestamp the quotes. Only AFTER you have picked the trade, use WebSearch for that one recommended ticker only (never search other holdings; skip searching if the result is 'no trade'): news from the last 7 days and scheduled catalysts before the time stop (e.g. FDA dates, investor days, Fed/CPI). Prefer primary or credible sources (company IR/press releases, SEC, Reuters, Bloomberg, WSJ, CNBC). Add a 'News & catalysts' section citing each source with its date. News is context only: it can flag a risk but must not override the technical filters."
+
+OPTIONS_PROMPT="/robinhood-copilot Options income mode for today ($DATE): what calls should I sell this week for premium without earnings risk? Follow references/options-income.md exactly (expiration 25–45 days out and before the next earnings date, delta 0.15–0.25, max 50% coverage of free shares per lot, Roth first). Analysis only: do not trade, review, or preview any orders. If the US stock market is closed today (holiday), say so in one line and stop. Output ONLY the final markdown report, starting with a '# Options income — $DATE' heading: Bottom line, The trade, Why, Management, What to leave alone, Fallback. Timestamp the quotes. Do not use WebSearch."
 
 # dontAsk: any tool not in ALLOWED is refused outright instead of being auto-approved.
 # --tools limits built-in tools to Read/Bash/Skill/WebSearch (no file writes, page fetches, or subagents).
+run_claude() {
+  "$CLAUDE" -p "$1" \
+    --permission-mode dontAsk \
+    --tools "Read,Bash,Skill,WebSearch" \
+    --allowedTools "$ALLOWED" \
+    --disallowedTools "$DENIED"
+}
+
 cd "$REPO"
-log "Starting swing-trade analysis for $DATE"
-if "$CLAUDE" -p "$PROMPT" \
-     --permission-mode dontAsk \
-     --tools "Read,Bash,Skill,WebSearch" \
-     --allowedTools "$ALLOWED" \
-     --disallowedTools "$DENIED" > "$OUT.tmp"; then
+status=0
+{
+  log "Starting swing-trade analysis for $DATE" >&2
+  run_claude "$SWING_PROMPT" || status=$?
+  printf '\n\n---\n\n'
+  log "Starting options-income analysis for $DATE" >&2
+  run_claude "$OPTIONS_PROMPT" || status=$?
+} > "$OUT.tmp"
+
+if (( status == 0 )); then
   mv "$OUT.tmp" "$OUT"
   log "Wrote $OUT"
 else
-  status=$?
   mv "$OUT.tmp" "$OUT_DIR/swingtrade-$DATE.error.md"
   log "claude exited $status — see swingtrade-$DATE.error.md"
   exit "$status"
