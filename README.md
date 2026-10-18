@@ -13,7 +13,7 @@ An AI trading copilot for Robinhood accounts. It is built on the **`robinhood-tr
 - [Agent instruction files: CLAUDE.md and AGENTS.md](#agent-instruction-files-claudemd-and-agentsmd)
 - [The robinhood-copilot skill](#the-robinhood-copilot-skill)
 - [Use cases and sample prompts](#use-cases-and-sample-prompts)
-- [Permissions and headless runs](#permissions-and-headless-runs)
+- [Configuration, permissions, and headless runs](#configuration-permissions-and-headless-runs)
 - [Safety](#safety)
 - [Testing the skill](#testing-the-skill)
 
@@ -23,29 +23,41 @@ An AI trading copilot for Robinhood accounts. It is built on the **`robinhood-tr
 
 ```
 robinhood-agent/
-├── README.md                          ← this file
-├── CLAUDE.md                          ← Claude Code instructions for the MCP tools
-├── .agents/
-│   └── AGENTS.md                      ← same rules, agent-neutral (agy / Antigravity)
-└── .claude/
+├── README.md                                  ← this file
+├── CLAUDE.md                                  ← Claude Code instructions for the MCP tools
+├── .agents/                                   ← Antigravity (agy) workspace customizations
+│   ├── AGENTS.md                              ← agent-neutral rules + trade analysis checklist
+│   └── skills/
+│       ├── robinhood-copilot/                 ← the trading copilot skill (agy)
+│       │   ├── SKILL.md                       ← core rules, data snapshot, portfolio review
+│       │   └── references/
+│       │       ├── strategy-review.md         ← infer strategy from trade history
+│       │       ├── options-income.md          ← covered calls / cash-secured puts
+│       │       └── swing-screen.md            ← pick one swing trade from holdings
+│       └── robinhood-eval-runner/             ← native eval runner skill (agy)
+│           ├── SKILL.md                       ← parallel subagent eval & grading workflow
+│           ├── evals/evals.json               ← test prompts + pass/fail checks (gitignored)
+│           └── scripts/audit_transcripts.py   ← deterministic JSONL transcript auditor
+└── .claude/                                   ← Claude Code workspace customizations
     └── skills/
-        ├── robinhood-copilot/         ← the skill
-        │   ├── SKILL.md               ← core rules, data snapshot, portfolio review
+        ├── robinhood-copilot/                 ← the trading copilot skill (Claude Code)
+        │   ├── SKILL.md                       ← core rules, data snapshot, portfolio review
         │   ├── references/
-        │   │   ├── strategy-review.md ← infer strategy from trade history
-        │   │   ├── options-income.md  ← covered calls / cash-secured puts
-        │   │   └── swing-screen.md    ← pick one swing trade from holdings
-        │   └── evals/evals.json       ← test prompts + pass/fail checks
-        └── robinhood-copilot-workspace/  ← test results only (not a skill)
-            ├── iteration-1..3/        ← answers, grading, benchmark per round
-            └── skill-snapshot-iter*/  ← skill backups before each round
+        │   │   ├── strategy-review.md         ← infer strategy from trade history
+        │   │   ├── options-income.md          ← covered calls / cash-secured puts
+        │   │   └── swing-screen.md            ← pick one swing trade from holdings
+        │   └── evals/evals.json               ← test prompts + pass/fail checks (gitignored)
+        └── robinhood-copilot-workspace/       ← test results only (gitignored)
+            ├── iteration-1..3/                ← answers, grading, benchmark per round
+            └── skill-snapshot-iter*/          ← skill backups before each round
 ```
 
 ---
 
 ## The robinhood-trading MCP server
 
-Connect it in Claude Code with `/mcp`. All tools are named `mcp__robinhood-trading__<tool>`.
+- **In Antigravity (`agy`):** Configure the server in `~/.gemini/config/mcp_config.json` (or via **Additional Options (...) > MCP Servers** in the UI). Tools are exposed under the `robinhood` server (lazy-loaded schemas in `~/.gemini/antigravity-cli/mcp/robinhood/<tool>.json` and invoked via `call_mcp_tool`).
+- **In Claude Code:** Connect it with `/mcp`. All tools are named `mcp__robinhood-trading__<tool>`.
 
 ### Tool groups
 
@@ -77,12 +89,12 @@ Only **one account** has `agentic_allowed: true`, so only that account can be tr
 
 ## Agent instruction files: CLAUDE.md and AGENTS.md
 
-Both files contain the same rules for using the MCP tools safely and cheaply:
+Both files contain the same core rules for using the MCP tools safely and cheaply:
 
 | File | Read by |
 |---|---|
-| `CLAUDE.md` | Claude Code (loaded automatically in this project) |
-| `.agents/AGENTS.md` | agy / Antigravity and other AGENTS.md-compatible agents (same content, no Claude-specific tool prefixes) |
+| `.agents/AGENTS.md` | **Antigravity (`agy`)** and other `AGENTS.md`-compatible agents (discovered automatically from `.agents/`; includes the Swing-Trade & Options Analysis Checklist) |
+| `CLAUDE.md` | **Claude Code** (loaded automatically at the repo root) |
 
 Main sections:
 1. **Safety rules.** Never invent order size or type, always review before placing, show pre-trade alerts verbatim, use the idempotency `ref_id`, check approvals fresh each time.
@@ -90,6 +102,7 @@ Main sections:
 3. **Call efficiency.** Batch symbols, run independent calls in parallel, filter option lookups, follow pagination only when needed.
 4. **Order parameter cheat sheet.** Equity, options and crypto rules: fractional shares, extended hours, tax lots, multi-leg orders, crypto order types.
 5. **Response style.**
+6. **Trade analysis & swing-trade checklist** (`.agents/AGENTS.md`). Always check per-ticker earnings first (`get_earnings_results`), pair open option positions with live quotes/Greeks, batch technical indicators (`rsi`, `bollinger_bands`, `sma` 50/200, `atr`), and check cross-account concentration and wash-sale risk.
 
 > The two files are separate copies. If you edit one, update the other too.
 
@@ -97,7 +110,7 @@ Main sections:
 
 ## The robinhood-copilot skill
 
-`.claude/skills/robinhood-copilot/` is a Claude Code skill. It loads automatically when you ask about your portfolio, positions, trades, covered calls or swing trades. To force it on, type `/robinhood-copilot …`.
+The skill is packaged in both `.agents/skills/robinhood-copilot/` (for **Antigravity / `agy`**) and `.claude/skills/robinhood-copilot/` (for **Claude Code**). It loads automatically via progressive disclosure when you ask about your portfolio, positions, trades, covered calls, or swing trades. In Claude Code, you can also force it on with `/robinhood-copilot …`.
 
 ### Modes
 
@@ -120,7 +133,7 @@ Main sections:
 | **Tax-advantaged account first** for option income and trims | No tax on premium, assignment or sales there |
 | **Strike estimate** `price × (1 + 0.8·IV·√(days/365))` → fetch only 3 strikes | About delta 0.20, with small API responses |
 | **Swing sizing** based on risk, then **capped by existing exposure** | Avoids piling more into an already concentrated name |
-| **Bottom line first**, then tables, ~400–850 words | Readable in a terminal |
+| **Bottom line first**, then tables, hard cap ≤750–850 words | Readable in a terminal |
 
 ### Output shapes
 
@@ -133,7 +146,7 @@ Main sections:
 
 ## Use cases and sample prompts
 
-Type these into Claude Code in this project. The casual phrasing is on purpose: that's how the skill was tested.
+Type these into **Antigravity (`agy`)** or **Claude Code** in this project. The casual phrasing is on purpose: that's how the skill was tested.
 
 ### 1. Portfolio review
 
@@ -195,14 +208,56 @@ Type these into Claude Code in this project. The casual phrasing is on purpose: 
 | `what did NVDA report last quarter` | Market research, not your portfolio |
 
 **Testing tips:**
-- Start with `/robinhood-copilot` to force the skill on. Leave it off to test whether it triggers by itself.
+- In Claude Code, start with `/robinhood-copilot` to force the skill on; in `agy` or Claude Code, leave it off to test whether it triggers automatically.
 - An answer starting with **Bottom line** means the skill loaded.
-- Run `/clear` between tests so earlier answers don't influence the next one.
+- Start a new conversation (or run `/clear`) between tests so earlier answers don't influence the next one.
 - For the edge cases, the refusal or caveat is what counts as passing.
 
 ---
 
-## Permissions and headless runs
+## Configuration, permissions, and headless runs
+
+### Antigravity (`agy`)
+
+1. **Workspace customizations (`.agents/`):**
+   When you launch `agy` (or open the workspace in Antigravity IDE / Antigravity 2.0), it automatically walks `.agents/` at the repo root and registers:
+   - **Always-on rule:** `.agents/AGENTS.md` (loaded unconditionally into every turn).
+   - **Progressive-disclosure skills:** `.agents/skills/robinhood-copilot/SKILL.md` and `.agents/skills/robinhood-eval-runner/SKILL.md` (only their `name` and `description` are injected upfront; the full `SKILL.md` and `references/*.md` are read on demand when activated).
+
+2. **Global MCP configuration (`~/.gemini/config/mcp_config.json`):**
+   Connect Antigravity to the Robinhood Streamable HTTP MCP endpoint:
+   ```json
+   {
+     "mcpServers": {
+       "robinhood": {
+         "url": "https://agent.robinhood.com/mcp/trading"
+       }
+     }
+   }
+   ```
+   Once connected, `agy` caches the 80+ tool schemas under `~/.gemini/antigravity-cli/mcp/robinhood/<tool>.json` and exposes them via `call_mcp_tool(ServerName="robinhood", ToolName="<tool>", Arguments={...})`.
+
+3. **CLI & permission settings (`~/.gemini/antigravity-cli/settings.json`):**
+   Configure your model, tool execution policy (`request-review`, `always-proceed`, `strict`, or `proceed-in-sandbox`), command allow/deny lists, and trusted workspaces:
+   ```json
+   {
+     "colorScheme": "solarized dark",
+     "model": "Gemini 4 Argon (Low)",
+     "toolPermission": "request-review",
+     "permissions": {
+       "allow": [
+         "command(python3)",
+         "command(jq)"
+       ]
+     },
+     "trustedWorkspaces": [
+       "/path/to/robinhood-agent"
+     ]
+   }
+   ```
+   - **Tool Execution Policies:** Use `"request-review"` (prompts before running terminal commands or write actions) or `"proceed-in-sandbox"` for safer interactive use; if using `"always-proceed"`, rely on Robinhood's in-app trade approval flow (`customer_approval_required: true`) and `.agents/AGENTS.md`'s read-only guardrails.
+
+### Claude Code
 
 | Mode | Behavior | How to enable |
 |---|---|---|
@@ -282,7 +337,23 @@ Biggest improvements over no skill:
 - **Covered calls:** without the skill, the answer would have capped an entire position. With it, coverage stays at ≤50%, and it uses 16–24% fewer tokens because it skips the full earnings calendar.
 - **Swing trade:** with the skill, size is capped by existing exposure to the name (well under half the baseline's size), and the answer has a full "passed on" table.
 
-Test prompts and checks live in `.claude/skills/robinhood-copilot/evals/evals.json`. Results are in `robinhood-copilot-workspace/iteration-*/benchmark.md`. To review them in a browser:
+### Running the evals in Antigravity (`agy`)
+
+In `agy`, the `.agents/skills/robinhood-eval-runner/` skill runs all 4 eval prompts in parallel using isolated `self` subagents (`invoke_subagent`) and grades them deterministically with `scripts/audit_transcripts.py`:
+
+1. Ask `agy`:
+   ```text
+   run the evals for robinhood-copilot
+   ```
+2. Or run the transcript auditor directly against completed subagent conversation IDs:
+   ```bash
+   python3 .agents/skills/robinhood-eval-runner/scripts/audit_transcripts.py \
+     1:<conv_id_1> 2:<conv_id_2> 3:<conv_id_3> 4:<conv_id_4>
+   ```
+
+### Reviewing benchmark rounds in Claude Code
+
+Test prompts and checks live in `.claude/skills/robinhood-copilot/evals/evals.json` (and `.agents/skills/robinhood-eval-runner/evals/evals.json`). Results are in `robinhood-copilot-workspace/iteration-*/benchmark.md`. To review them in a browser:
 
 ```bash
 python3.11 <skill-creator>/eval-viewer/generate_review.py \

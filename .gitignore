@@ -1,6 +1,7 @@
 # Eval prompts/assertions reference real holdings
 .claude/skills/robinhood-copilot/evals/evals.json
 .agents/skills/robinhood-copilot/evals/evals.json
+.agents/skills/robinhood-eval-runner/evals/evals.json
 
 # Skill test output: full account numbers and portfolio data
 .claude/skills/robinhood-copilot-workspace/
