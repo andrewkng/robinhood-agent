@@ -63,15 +63,34 @@ run_claude() {
     --disallowedTools "$DENIED"
 }
 
+# Retry a failed run once after a pause (e.g. rate limiting). The retry overwrites the
+# failed attempt's output, so only the half that failed is rerun.
+RETRY_DELAY=${RETRY_DELAY:-300}
+run_with_retry() {
+  local name=$1 prompt=$2 out=$3 rc=0
+  run_claude "$prompt" > "$out" || rc=$?
+  if (( rc != 0 )); then
+    log "$name run exited $rc — retrying once in ${RETRY_DELAY}s"
+    sleep "$RETRY_DELAY"
+    rc=0
+    run_claude "$prompt" > "$out" || rc=$?
+    (( rc == 0 )) && log "$name retry succeeded" || log "$name retry exited $rc"
+  fi
+  return "$rc"
+}
+
 cd "$REPO"
+# Run both analyses in parallel, each to its own temp file, then join in a fixed order.
+log "Starting swing-trade + options-income analysis for $DATE (parallel)"
+run_with_retry swing   "$SWING_PROMPT"   "$OUT.swing.tmp"   & swing_pid=$!
+run_with_retry options "$OPTIONS_PROMPT" "$OUT.options.tmp" & opt_pid=$!
+
 status=0
-{
-  log "Starting swing-trade analysis for $DATE" >&2
-  run_claude "$SWING_PROMPT" || status=$?
-  printf '\n\n---\n\n'
-  log "Starting options-income analysis for $DATE" >&2
-  run_claude "$OPTIONS_PROMPT" || status=$?
-} > "$OUT.tmp"
+wait "$swing_pid" || status=$?
+wait "$opt_pid"   || status=$?
+
+{ cat "$OUT.swing.tmp"; printf '\n\n---\n\n'; cat "$OUT.options.tmp"; } > "$OUT.tmp"
+rm -f "$OUT.swing.tmp" "$OUT.options.tmp"
 
 if (( status == 0 )); then
   mv "$OUT.tmp" "$OUT"
