@@ -25,6 +25,7 @@ An AI trading copilot for Robinhood accounts. It is built on the **`robinhood-tr
 robinhood-agent/
 ├── README.md                                  ← this file
 ├── CLAUDE.md                                  ← Claude Code instructions for the MCP tools
+├── .mcp.json                                  ← Claude Code project-scoped MCP server config
 ├── plans/                                     ← implementation plans (e.g. swingtrade-launchd-schedule.md)
 ├── scripts/                                   ← Mon/Wed swing-trade + options-income launchd jobs (agy & Claude)
 │   ├── swingtrade-report-agy.sh               ← Antigravity (agy) headless runner
@@ -35,6 +36,7 @@ robinhood-agent/
 ├── swingtrade-reports/                        ← swingtrade-YYYY-MM-DD.md output (gitignored)
 ├── .agents/                                   ← Antigravity (agy) workspace customizations
 │   ├── AGENTS.md                              ← agent-neutral rules + trade analysis checklist
+│   ├── mcp_config.json                        ← agy workspace MCP server config (robinhood)
 │   ├── hooks.json                             ← PreToolUse hook enforcing read-only mode in headless agy runs
 │   └── skills/
 │       ├── robinhood-copilot/                 ← the trading copilot skill (agy)
@@ -65,8 +67,47 @@ robinhood-agent/
 
 ## The robinhood-trading MCP server
 
-- **In Antigravity (`agy`):** Configure the server in `~/.gemini/config/mcp_config.json` (or via **Additional Options (...) > MCP Servers** in the UI). Tools are exposed under the `robinhood` server (lazy-loaded schemas in `~/.gemini/antigravity-cli/mcp/robinhood/<tool>.json` and invoked via `call_mcp_tool`).
-- **In Claude Code:** Connect it with `/mcp`. All tools are named `mcp__robinhood-trading__<tool>`.
+- **In Antigravity (`agy`):** Configure the server in the workspace's `.agents/mcp_config.json` (or via **Additional Options (...) > MCP Servers** in the UI). Tools are exposed under the `robinhood` server (lazy-loaded schemas in `~/.gemini/antigravity-cli/mcp/robinhood/<tool>.json` and invoked via `call_mcp_tool`).
+- **In Claude Code:** Configure the server in the project's `.mcp.json`, then authenticate with `/mcp`. All tools are named `mcp__robinhood-trading__<tool>`.
+
+### MCP server configuration
+
+Both agents connect to the same remote Streamable HTTP endpoint, `https://agent.robinhood.com/mcp/trading`. Neither config holds credentials. You sign in through an OAuth flow in the browser the first time you connect.
+
+> The server name differs between the two agents: **`robinhood`** in `agy` and **`robinhood-trading`** in Claude Code. The skills, `CLAUDE.md`, `.agents/AGENTS.md`, the hook guard, and the permission lists all depend on these exact names, so don't rename either one.
+
+**Antigravity (`agy`): `.agents/mcp_config.json`** (workspace scope, next to `AGENTS.md`)
+
+```json
+{
+  "mcpServers": {
+    "robinhood": {
+      "url": "https://agent.robinhood.com/mcp/trading"
+    }
+  }
+}
+```
+
+**Claude Code: `.mcp.json`** (project scope, at the repo root)
+
+```json
+{
+  "mcpServers": {
+    "robinhood-trading": {
+      "type": "http",
+      "url": "https://agent.robinhood.com/mcp/trading"
+    }
+  }
+}
+```
+
+Equivalent CLI command (writes the same `.mcp.json`):
+
+```bash
+claude mcp add --transport http --scope project robinhood-trading https://agent.robinhood.com/mcp/trading
+```
+
+The first time Claude Code sees a project-scoped server, it asks you to approve it. Your choice is saved in `.claude/settings.local.json` as `"enabledMcpjsonServers": ["robinhood-trading"]`. After that, run `/mcp`, select `robinhood-trading`, and finish the browser login. To check the connection, run `claude mcp list` or ask the agent to call `get_accounts`.
 
 ### Tool groups
 
@@ -233,17 +274,8 @@ Type these into **Antigravity (`agy`)** or **Claude Code** in this project. The 
    - **Always-on rule:** `.agents/AGENTS.md` (loaded unconditionally into every turn).
    - **Progressive-disclosure skills:** `.agents/skills/robinhood-copilot/SKILL.md` and `.agents/skills/robinhood-eval-runner/SKILL.md` (only their `name` and `description` are injected upfront; the full `SKILL.md` and `references/*.md` are read on demand when activated).
 
-2. **Global MCP configuration (`~/.gemini/config/mcp_config.json`):**
-   Connect Antigravity to the Robinhood Streamable HTTP MCP endpoint:
-   ```json
-   {
-     "mcpServers": {
-       "robinhood": {
-         "url": "https://agent.robinhood.com/mcp/trading"
-       }
-     }
-   }
-   ```
+2. **Workspace MCP configuration (`.agents/mcp_config.json`):**
+   Connect Antigravity to the Robinhood Streamable HTTP MCP endpoint (see [MCP server configuration](#mcp-server-configuration) for the JSON).
    Once connected, `agy` caches the 80+ tool schemas under `~/.gemini/antigravity-cli/mcp/robinhood/<tool>.json` and exposes them via `call_mcp_tool(ServerName="robinhood", ToolName="<tool>", Arguments={...})`.
 
 3. **CLI & permission settings (`~/.gemini/antigravity-cli/settings.json`):**

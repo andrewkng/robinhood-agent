@@ -17,10 +17,10 @@
     },
     "context7": {
       "headers": {
-        "Accept": "application/json, text/event-stream",
-        "CONTEXT7_API_KEY": "REDACTED"
+        "Accept": "application/json, text/event-stream"
       },
-      "serverUrl": "https://mcp.context7.com/mcp"
+      "serverUrl": "https://mcp.context7.com/mcp",
+      "disabled": true
     },
     "geap": {
       "args": [
@@ -37,7 +37,6 @@
     },
     "google-developer-knowledge": {
       "headers": {
-        "X-Goog-Api-Key": "REDACTED",
         "disabled": true
       },
       "serverUrl": "https://developerknowledge.googleapis.com/mcp"
