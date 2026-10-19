@@ -13,6 +13,3 @@
 # Daily swing-trade reports: real holdings
 swingtrade-reports/*.md
 swingtrade-reports/logs/
-
-# agy workspace MCP config: may hold API keys (copy from mcp_config.example.json)
-.agents/mcp_config.json

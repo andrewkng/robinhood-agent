@@ -36,7 +36,7 @@ robinhood-agent/
 ├── swingtrade-reports/                        ← swingtrade-YYYY-MM-DD.md output (gitignored)
 ├── .agents/                                   ← Antigravity (agy) workspace customizations
 │   ├── AGENTS.md                              ← agent-neutral rules + trade analysis checklist
-│   ├── mcp_config.example.json                ← agy workspace MCP config template (copy to mcp_config.json, gitignored)
+│   ├── mcp_config.json                        ← agy workspace MCP server config (robinhood)
 │   ├── hooks.json                             ← PreToolUse hook enforcing read-only mode in headless agy runs
 │   └── skills/
 │       ├── robinhood-copilot/                 ← the trading copilot skill (agy)
@@ -88,11 +88,7 @@ Both agents connect to the same remote Streamable HTTP endpoint, `https://agent.
 }
 ```
 
-`.agents/mcp_config.json` is gitignored because it can hold API keys for other MCP servers. Create it from the committed template:
-
-```bash
-cp .agents/mcp_config.example.json .agents/mcp_config.json
-```
+`.agents/mcp_config.json` is committed, so never put API keys or tokens in it.
 
 **Claude Code: `.mcp.json`** (project scope, at the repo root)
 
