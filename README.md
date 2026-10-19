@@ -181,7 +181,7 @@ The skill is packaged in both `.agents/skills/robinhood-copilot/` (for **Antigra
 | **Full snapshot of every account** before analysis | Concentration and option conflicts only show up when all accounts are combined |
 | **Math done in Python**, not in its head | P&L, weights, collateral and extrinsic value need to be exact |
 | **Earnings filter.** Option expiries and swing trades end before the next report. | A gap through earnings makes stops and strikes meaningless |
-| **Covered-call coverage ≤ 50% of free shares in each lot.** A lot under 200 shares is ineligible. | Prevents fully capped positions |
+| **Covered-call eligibility ≥ 100 free shares per lot** (1 contract on 100–199 shares; ≤50% on ≥200 shares). | Allows 1-lot covered calls while keeping upside uncapped on larger positions |
 | **Tax-advantaged account first** for option income and trims | No tax on premium, assignment or sales there |
 | **Strike estimate** `price × (1 + 0.8·IV·√(days/365))` → fetch only 3 strikes | About delta 0.20, with small API responses |
 | **Swing sizing** based on risk, then **capped by existing exposure** | Avoids piling more into an already concentrated name |
