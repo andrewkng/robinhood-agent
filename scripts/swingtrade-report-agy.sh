@@ -17,8 +17,15 @@ mkdir -p "$OUT_DIR/logs"
 
 log() { echo "[$(date '+%F %T %Z')] $*"; }
 
-if [[ -e "$OUT" ]]; then
-  log "Report already exists: $OUT — skipping."
+has_swing=0
+has_options=0
+if [[ -s "$OUT" ]]; then
+  grep -Eq '^#+[[:space:]]+Swing trade' "$OUT" && has_swing=1
+  grep -Eq '^#+[[:space:]]+Options income' "$OUT" && has_options=1
+fi
+
+if (( has_swing && has_options )); then
+  log "Both Swing trade and Options income reports already exist in $OUT — skipping."
   exit 0
 fi
 
@@ -66,23 +73,46 @@ run_with_retry() {
 }
 
 cd "$REPO"
-# Run both analyses in parallel, each to its own temp file, then join in a fixed order.
-log "Starting agy swing-trade + options-income analysis for $DATE (parallel)"
-run_with_retry swing   "$SWING_PROMPT"   "$OUT.swing.tmp"   & swing_pid=$!
-run_with_retry options "$OPTIONS_PROMPT" "$OUT.options.tmp" & opt_pid=$!
+swing_pid=""
+opt_pid=""
+
+if (( ! has_swing )); then
+  log "Starting agy swing-trade analysis for $DATE"
+  run_with_retry swing "$SWING_PROMPT" "$OUT.swing.tmp" & swing_pid=$!
+else
+  log "Swing trade report already exists in $OUT — skipping swing run."
+fi
+
+if (( ! has_options )); then
+  log "Starting agy options-income analysis for $DATE"
+  run_with_retry options "$OPTIONS_PROMPT" "$OUT.options.tmp" & opt_pid=$!
+else
+  log "Options income report already exists in $OUT — skipping options run."
+fi
 
 status=0
-wait "$swing_pid" || status=$?
-wait "$opt_pid"   || status=$?
-
-{ cat "$OUT.swing.tmp"; printf '\n\n---\n\n'; cat "$OUT.options.tmp"; } > "$OUT.tmp"
-rm -f "$OUT.swing.tmp" "$OUT.options.tmp"
+[[ -n "$swing_pid" ]] && { wait "$swing_pid" || status=$?; }
+[[ -n "$opt_pid" ]]   && { wait "$opt_pid"   || status=$?; }
 
 if (( status == 0 )); then
-  mv "$OUT.tmp" "$OUT"
-  log "Wrote $OUT"
+  if (( ! has_swing && ! has_options )); then
+    { cat "$OUT.swing.tmp"; printf '\n\n---\n\n'; cat "$OUT.options.tmp"; } > "$OUT"
+    log "Wrote $OUT"
+  elif (( ! has_swing )); then
+    { printf '\n\n---\n\n'; cat "$OUT.swing.tmp"; } >> "$OUT"
+    log "Appended Swing trade report to $OUT"
+  elif (( ! has_options )); then
+    { printf '\n\n---\n\n'; cat "$OUT.options.tmp"; } >> "$OUT"
+    log "Appended Options income report to $OUT"
+  fi
+  rm -f "$OUT.swing.tmp" "$OUT.options.tmp"
 else
-  mv "$OUT.tmp" "$OUT_DIR/swingtrade-$DATE.error.md"
+  {
+    [[ -f "$OUT.swing.tmp" ]] && cat "$OUT.swing.tmp"
+    [[ -f "$OUT.swing.tmp" && -f "$OUT.options.tmp" ]] && printf '\n\n---\n\n'
+    [[ -f "$OUT.options.tmp" ]] && cat "$OUT.options.tmp"
+  } > "$OUT_DIR/swingtrade-$DATE.error.md"
+  rm -f "$OUT.swing.tmp" "$OUT.options.tmp"
   log "agy exited $status — see swingtrade-$DATE.error.md"
   exit "$status"
 fi

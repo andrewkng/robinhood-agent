@@ -15,8 +15,15 @@ mkdir -p "$OUT_DIR/logs"
 
 log() { echo "[$(date '+%F %T %Z')] $*"; }
 
-if [[ -e "$OUT" ]]; then
-  log "Report already exists: $OUT — skipping."
+has_swing=0
+has_options=0
+if [[ -s "$OUT" ]]; then
+  grep -Eq '^#+[[:space:]]+Swing trade' "$OUT" && has_swing=1
+  grep -Eq '^#+[[:space:]]+Options income' "$OUT" && has_options=1
+fi
+
+if (( has_swing && has_options )); then
+  log "Both Swing trade and Options income reports already exist in $OUT — skipping."
   exit 0
 fi
 
@@ -34,7 +41,7 @@ if [[ "${FORCE:-0}" != "1" ]]; then
 fi
 
 MCP=mcp__robinhood-trading__
-ALLOWED="${MCP}get_accounts,${MCP}get_portfolio,${MCP}get_equity_positions,${MCP}get_option_positions,${MCP}get_crypto_positions,${MCP}get_equity_quotes,${MCP}get_crypto_quotes,${MCP}get_option_chains,${MCP}get_option_instruments,${MCP}get_option_quotes,${MCP}get_equity_fundamentals,${MCP}get_equity_analyst_ratings,${MCP}get_earnings_results,${MCP}get_equity_historicals,${MCP}get_equity_technical_indicators,Bash(python3:*),Bash(jq:*),Read,Skill,WebSearch"
+ALLOWED="${MCP}get_accounts,${MCP}get_portfolio,${MCP}get_equity_positions,${MCP}get_option_positions,${MCP}get_crypto_positions,${MCP}get_equity_quotes,${MCP}get_crypto_quotes,${MCP}get_option_chains,${MCP}get_option_instruments,${MCP}get_option_quotes,${MCP}get_equity_fundamentals,${MCP}get_equity_analyst_ratings,${MCP}get_earnings_results,${MCP}get_equity_historicals,${MCP}get_equity_technical_indicators,${MCP}preview_scan,${MCP}run_scan,${MCP}get_scans,Bash(python3:*),Bash(jq:*),Read,Skill,WebSearch"
 # Deny every tool that can trade or change the account. Deny rules win over any
 # allow rule or permission mode, including the user's global "auto" defaultMode.
 DENIED=$(printf "${MCP}%s," \
@@ -80,23 +87,46 @@ run_with_retry() {
 }
 
 cd "$REPO"
-# Run both analyses in parallel, each to its own temp file, then join in a fixed order.
-log "Starting swing-trade + options-income analysis for $DATE (parallel)"
-run_with_retry swing   "$SWING_PROMPT"   "$OUT.swing.tmp"   & swing_pid=$!
-run_with_retry options "$OPTIONS_PROMPT" "$OUT.options.tmp" & opt_pid=$!
+swing_pid=""
+opt_pid=""
+
+if (( ! has_swing )); then
+  log "Starting claude swing-trade analysis for $DATE"
+  run_with_retry swing "$SWING_PROMPT" "$OUT.swing.tmp" & swing_pid=$!
+else
+  log "Swing trade report already exists in $OUT — skipping swing run."
+fi
+
+if (( ! has_options )); then
+  log "Starting claude options-income analysis for $DATE"
+  run_with_retry options "$OPTIONS_PROMPT" "$OUT.options.tmp" & opt_pid=$!
+else
+  log "Options income report already exists in $OUT — skipping options run."
+fi
 
 status=0
-wait "$swing_pid" || status=$?
-wait "$opt_pid"   || status=$?
-
-{ cat "$OUT.swing.tmp"; printf '\n\n---\n\n'; cat "$OUT.options.tmp"; } > "$OUT.tmp"
-rm -f "$OUT.swing.tmp" "$OUT.options.tmp"
+[[ -n "$swing_pid" ]] && { wait "$swing_pid" || status=$?; }
+[[ -n "$opt_pid" ]]   && { wait "$opt_pid"   || status=$?; }
 
 if (( status == 0 )); then
-  mv "$OUT.tmp" "$OUT"
-  log "Wrote $OUT"
+  if (( ! has_swing && ! has_options )); then
+    { cat "$OUT.swing.tmp"; printf '\n\n---\n\n'; cat "$OUT.options.tmp"; } > "$OUT"
+    log "Wrote $OUT"
+  elif (( ! has_swing )); then
+    { printf '\n\n---\n\n'; cat "$OUT.swing.tmp"; } >> "$OUT"
+    log "Appended Swing trade report to $OUT"
+  elif (( ! has_options )); then
+    { printf '\n\n---\n\n'; cat "$OUT.options.tmp"; } >> "$OUT"
+    log "Appended Options income report to $OUT"
+  fi
+  rm -f "$OUT.swing.tmp" "$OUT.options.tmp"
 else
-  mv "$OUT.tmp" "$OUT_DIR/swingtrade-$DATE.error.md"
+  {
+    [[ -f "$OUT.swing.tmp" ]] && cat "$OUT.swing.tmp"
+    [[ -f "$OUT.swing.tmp" && -f "$OUT.options.tmp" ]] && printf '\n\n---\n\n'
+    [[ -f "$OUT.options.tmp" ]] && cat "$OUT.options.tmp"
+  } > "$OUT_DIR/swingtrade-$DATE.error.md"
+  rm -f "$OUT.swing.tmp" "$OUT.options.tmp"
   log "claude exited $status — see swingtrade-$DATE.error.md"
   exit "$status"
 fi
