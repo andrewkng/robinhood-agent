@@ -5,8 +5,9 @@
 set -euo pipefail
 
 REPO=/Users/yannipeng/git-projects/robinhood-agent
-CLAUDE=/opt/homebrew/bin/claude
-export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+NVM_BINS=$(ls -d /Users/yannipeng/.nvm/versions/node/*/bin 2>/dev/null | sort -Vr | paste -sd: - || true)
+export PATH="/Users/yannipeng/.local/bin:/opt/homebrew/bin:/opt/homebrew/sbin:${NVM_BINS:+$NVM_BINS:}/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+CLAUDE=${CLAUDE:-$(command -v claude || echo /opt/homebrew/bin/claude)}
 
 DATE=$(TZ=America/New_York date +%F)
 OUT_DIR="$REPO/swingtrade-reports"
@@ -41,7 +42,7 @@ if [[ "${FORCE:-0}" != "1" ]]; then
 fi
 
 MCP=mcp__robinhood-trading__
-ALLOWED="${MCP}get_accounts,${MCP}get_portfolio,${MCP}get_equity_positions,${MCP}get_option_positions,${MCP}get_crypto_positions,${MCP}get_equity_quotes,${MCP}get_crypto_quotes,${MCP}get_option_chains,${MCP}get_option_instruments,${MCP}get_option_quotes,${MCP}get_equity_fundamentals,${MCP}get_equity_analyst_ratings,${MCP}get_earnings_results,${MCP}get_equity_historicals,${MCP}get_equity_technical_indicators,${MCP}preview_scan,${MCP}run_scan,${MCP}get_scans,Bash(python3:*),Bash(jq:*),Read,Skill,WebSearch"
+ALLOWED="${MCP}get_accounts,${MCP}get_portfolio,${MCP}get_equity_positions,${MCP}get_option_positions,${MCP}get_crypto_positions,${MCP}get_equity_quotes,${MCP}get_crypto_quotes,${MCP}get_option_chains,${MCP}get_option_instruments,${MCP}get_option_quotes,${MCP}get_equity_fundamentals,${MCP}get_equity_analyst_ratings,${MCP}get_earnings_results,${MCP}get_equity_historicals,${MCP}get_equity_technical_indicators,${MCP}preview_scan,${MCP}run_scan,${MCP}get_scans,Bash(python3:*),Bash(jq:*),Read,Glob,Grep,Skill,ToolSearch,WebSearch"
 # Deny every tool that can trade or change the account. Deny rules win over any
 # allow rule or permission mode, including the user's global "auto" defaultMode.
 DENIED=$(printf "${MCP}%s," \
@@ -61,11 +62,13 @@ SWING_PROMPT="/robinhood-copilot Run the swing screen on my holdings for today (
 OPTIONS_PROMPT="/robinhood-copilot Options income mode for today ($DATE): what covered calls AND cash-secured puts should I sell this week for premium without earnings risk? You must evaluate and include a recommendation for BOTH a covered call and a cash-secured put, following references/options-income.md exactly (expiration 25–45 days out and before the next earnings date, |delta| 0.15–0.25, IV > historical average [IV > 20D/30D HV and 1-Yr IV Percentile > 50%] for both calls and puts, ≥100 free shares per lot for calls, put collateral ≤ available buying power and ≤20% of account value on non-overconcentrated holdings, Roth first). Analysis only: do not trade, review, or preview any orders. If the US stock market is closed today (holiday), say so in one line and stop. Output ONLY the final markdown report, starting with a '# Options income — $DATE' heading: Bottom line, The trades (both Covered Call and Cash-Secured Put), Why, Events to note, Management, What to leave alone, Fallback. Timestamp the quotes. Only AFTER you have picked the trades, use WebSearch for the recommended ticker(s) only (never other holdings; skip if there is no trade) to find 1-Yr IV Percentile and big events before the expiration (confirmed earnings, ex-dividend, FDA dates, investor days, M&A, lawsuits, Fed/CPI), citing credible sources with dates under 'Events to note'. Events can change the expiration or strike, or rule a name out, but must not override the delta, IV vs. HV, earnings and coverage/collateral rules."
 
 # dontAsk: any tool not in ALLOWED is refused outright instead of being auto-approved.
-# --tools limits built-in tools to Read/Bash/Skill/WebSearch (no file writes, page fetches, or subagents).
+# --tools limits built-in tools to Read/Glob/Grep/Bash/Skill/ToolSearch/WebSearch (no file writes, page fetches, or subagents).
+# --add-dir grants Read access to ~/.claude and temp dirs where Claude spills large MCP outputs (e.g. get_accounts).
 run_claude() {
   "$CLAUDE" -p "$1" \
     --permission-mode dontAsk \
-    --tools "Read,Bash,Skill,WebSearch" \
+    --add-dir "$HOME/.claude" /tmp "${TMPDIR:-/tmp}" \
+    --tools "Read,Glob,Grep,Bash,Skill,ToolSearch,WebSearch" \
     --allowedTools "$ALLOWED" \
     --disallowedTools "$DENIED"
 }

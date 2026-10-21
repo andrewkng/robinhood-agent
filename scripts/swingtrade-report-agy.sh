@@ -6,8 +6,9 @@
 set -euo pipefail
 
 REPO=/Users/yannipeng/git-projects/robinhood-agent
-AGY=/Users/yannipeng/.local/bin/agy
-export PATH="/Users/yannipeng/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+NVM_BINS=$(ls -d /Users/yannipeng/.nvm/versions/node/*/bin 2>/dev/null | sort -Vr | paste -sd: - || true)
+export PATH="/Users/yannipeng/.local/bin:/opt/homebrew/bin:/opt/homebrew/sbin:${NVM_BINS:+$NVM_BINS:}/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+AGY=${AGY:-$(command -v agy || echo /Users/yannipeng/.local/bin/agy)}
 export AGY_READONLY_REPORT=1
 
 DATE=$(TZ=America/New_York date +%F)

@@ -7,7 +7,7 @@ strictly enforces the same read-only tool allow/deny policy as swingtrade-report
   get_*_quotes, get_option_chains, get_option_instruments, get_equity_fundamentals,
   get_equity_analyst_ratings, get_earnings_results, get_equity_historicals,
   get_equity_technical_indicators).
-- Allows view_file, search_web, and read-only python3/jq commands.
+- Allows read_file/view_file, search_web, and read-only python3/jq commands.
 - Denies all mutating Robinhood MCP tools (place_*, review_*, preview_*, cancel_*,
   exercise_option, decline_trade_approval, alert/watchlist/scan/legend writes),
   file writes/edits, URL fetches, and subagents.
@@ -35,6 +35,9 @@ ALLOWED_ROBINHOOD_TOOLS = {
     "get_earnings_results",
     "get_equity_historicals",
     "get_equity_technical_indicators",
+    "preview_scan",
+    "run_scan",
+    "get_scans",
 }
 
 DENIED_ROBINHOOD_TOOLS = {
@@ -114,7 +117,7 @@ def main() -> None:
         reply("allow")
 
     # 3. Built-in read/search tools
-    if name in {"view_file", "search_web", "grep_search", "find_by_name", "list_dir"}:
+    if name in {"read_file", "view_file", "search_web", "grep_search", "find_by_name", "list_dir"}:
         reply("allow")
 
     # 4. Terminal commands: allow python3 / jq calculations
