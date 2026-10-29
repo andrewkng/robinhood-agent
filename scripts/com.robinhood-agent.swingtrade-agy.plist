@@ -7,19 +7,19 @@
   <key>ProgramArguments</key>
   <array>
     <string>/bin/bash</string>
-    <string>/Users/yannipeng/git-projects/robinhood-agent/scripts/swingtrade-report-agy.sh</string>
+    <string>__REPO__/scripts/swingtrade-report-agy.sh</string>
   </array>
   <key>WorkingDirectory</key>
-  <string>/Users/yannipeng/git-projects/robinhood-agent</string>
-  <!-- 6:40 AM local (PT) = 9:40 AM ET, Mon and Wed. Missed runs during sleep fire on wake. -->
+  <string>__REPO__</string>
+  <!-- Template: scripts/install-launchd.sh fills in __REPO__, __HOUR__ and __MINUTE__ (9:40 AM ET in your local time). Mon and Wed. Missed runs during sleep fire on wake. -->
   <key>StartCalendarInterval</key>
   <array>
-    <dict><key>Weekday</key><integer>1</integer><key>Hour</key><integer>6</integer><key>Minute</key><integer>40</integer></dict>
-    <dict><key>Weekday</key><integer>3</integer><key>Hour</key><integer>6</integer><key>Minute</key><integer>40</integer></dict>
+    <dict><key>Weekday</key><integer>1</integer><key>Hour</key><integer>__HOUR__</integer><key>Minute</key><integer>__MINUTE__</integer></dict>
+    <dict><key>Weekday</key><integer>3</integer><key>Hour</key><integer>__HOUR__</integer><key>Minute</key><integer>__MINUTE__</integer></dict>
   </array>
   <key>StandardOutPath</key>
-  <string>/Users/yannipeng/git-projects/robinhood-agent/swingtrade-reports/logs/launchd.log</string>
+  <string>__REPO__/swingtrade-reports/logs/launchd.log</string>
   <key>StandardErrorPath</key>
-  <string>/Users/yannipeng/git-projects/robinhood-agent/swingtrade-reports/logs/launchd.log</string>
+  <string>__REPO__/swingtrade-reports/logs/launchd.log</string>
 </dict>
 </plist>

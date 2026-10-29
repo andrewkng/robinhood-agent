@@ -12,7 +12,7 @@ Timing: the market opens at 9:30 ET, which is 6:30 AM in your local time (PDT). 
 1. **`swingtrade-reports/`**: the output folder, with a `.gitkeep`. Add `swingtrade-reports/*.md` and `swingtrade-reports/logs/` to `.gitignore`, because the reports contain real holdings. The repo already gitignores portfolio data, e.g. `.claude/skills/robinhood-copilot-workspace/`.
 
 2. **`scripts/swingtrade-report.sh`**: the job entrypoint (`chmod +x`).
-   - `set -euo pipefail`. Use absolute paths: `REPO=/Users/yannipeng/git-projects/robinhood-agent` and `CLAUDE=/opt/homebrew/bin/claude`. Export a `PATH` that includes `/opt/homebrew/bin`, because launchd's environment is minimal.
+   - `set -euo pipefail`. Use absolute paths: `REPO=<repo>` and `CLAUDE=/opt/homebrew/bin/claude`. Export a `PATH` that includes `/opt/homebrew/bin`, because launchd's environment is minimal.
    - `DATE=$(TZ=America/New_York date +%F)` gives the trading date. `OUT=$REPO/swingtrade-reports/swingtrade-$DATE.md`.
    - **Guards**:
      - Exit if `$OUT` already exists. This makes the job idempotent on wake-up re-runs and manual runs.
@@ -43,7 +43,7 @@ The job is a per-user **LaunchAgent**. It runs in your login session (`gui/<uid>
 
 1. **Link the plist into `~/Library/LaunchAgents/`.** launchd reads this folder at every login. A symlink keeps the version in git as the one launchd uses.
    ```bash
-   ln -sf /Users/yannipeng/git-projects/robinhood-agent/scripts/com.robinhood-agent.swingtrade.plist ~/Library/LaunchAgents/
+   ln -sf <repo>/scripts/com.robinhood-agent.swingtrade.plist ~/Library/LaunchAgents/
    ```
 2. **Load it into the current session**, so you don't have to log out and back in:
    ```bash

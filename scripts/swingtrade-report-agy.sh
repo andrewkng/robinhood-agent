@@ -5,10 +5,12 @@
 # Set FORCE=1 to bypass the weekday/time guards for manual testing.
 set -euo pipefail
 
-REPO=/Users/yannipeng/git-projects/robinhood-agent
-NVM_BINS=$(ls -d /Users/yannipeng/.nvm/versions/node/*/bin 2>/dev/null | sort -Vr | paste -sd: - || true)
-export PATH="/Users/yannipeng/.local/bin:/opt/homebrew/bin:/opt/homebrew/sbin:${NVM_BINS:+$NVM_BINS:}/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
-AGY=${AGY:-$(command -v agy || echo /Users/yannipeng/.local/bin/agy)}
+# Repo root = parent of this script, so the clone can live anywhere. Override with REPO=...
+REPO=${REPO:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}
+NVM_BINS=$(ls -d "$HOME"/.nvm/versions/node/*/bin 2>/dev/null | sort -Vr | paste -sd: - || true)
+# launchd starts jobs with a minimal PATH, so add the usual install locations.
+export PATH="$HOME/.local/bin:/opt/homebrew/bin:/opt/homebrew/sbin:${NVM_BINS:+$NVM_BINS:}/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+AGY=${AGY:-$(command -v agy || echo "$HOME/.local/bin/agy")}
 export AGY_READONLY_REPORT=1
 
 DATE=$(TZ=America/New_York date +%F)
